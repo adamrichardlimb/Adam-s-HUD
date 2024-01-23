@@ -19,6 +19,11 @@ if CLIENT then
 		-- Here we go...
 		AHUD = {}
 
+		AHUD.BOX_TOP_LEFT = 0
+		AHUD.BOX_TOP_RIGHT = 1
+		AHUD.BOX_BOTTOM_LEFT = 2
+		AHUD.BOX_BOTTOM_RIGHT = 3
+
 		-- Define static stuff we likely will not change
 		AHUD.ScrW = ScrW()
 		AHUD.ScrH = ScrH()
@@ -26,6 +31,10 @@ if CLIENT then
 		AHUD.Padding = 0.025
 		AHUD.Margin = 0.0125
 		AHUD.LastDisplayedHealth = -1
+		surface.CreateFont( "PD2_12", { font = "Tenby Five", antialias = true, size = 17 } )
+		surface.CreateFont( "PD2_14", { font = "Tenby Five", antialias = true, size = 18 } )
+		surface.CreateFont( "PD2_16", { font = "Tenby Five", antialias = true, size = 23 } )
+		surface.CreateFont( "PD2_20", { font = "Tenby Five", antialias = true, size = 32.5 } )
 		surface.CreateFont( "PD2_24", { font = "Tenby Five", antialias = true, size = 39 } )
 
 		--How long should the health drain animation last?
@@ -145,6 +154,150 @@ if CLIENT then
 			end
 		end
 
+		function AHUD:DrawTriangleBox(x, y, width, height, corner)
+			corner = corner or AHUD.BOX_TOP_LEFT
+
+			local triangleVerts = {}
+			local squareVerts = {}
+
+			-- Triangle always starts at half the height of the box
+			local triangleHeight = (3/8) * height
+			local boxPadding = width * AHUD.Padding
+
+			--Find where our next vertex is
+			if corner == AHUD.BOX_TOP_LEFT then
+				//Start at halfway down
+				table.insert(triangleVerts, {
+					x=x,
+					y=y + triangleHeight
+				})
+
+				//Top left of the overall box
+				table.insert(triangleVerts, {
+					x=x,
+					y=y
+				})
+
+				//Then to the right
+				//The triangle goes as much to the right as it does down
+				//So we add y/2 - this is not a typo!
+				table.insert(triangleVerts, {
+					x = x + triangleHeight,
+					y = y
+				})
+
+				//Fortunately - we don't have to transform the triangle verts
+				table.insert(squareVerts, {
+					x = x + boxPadding + triangleHeight,
+					y = y
+				})
+
+				table.insert(squareVerts, {
+					x = x + width,
+					y = y
+				})
+
+				table.insert(squareVerts, {
+					x = x + width,
+					y = y + height
+				})
+
+				table.insert(squareVerts, {
+					x = x,
+					y = y + height
+				})
+
+				table.insert(squareVerts, {
+					x = x,
+					y = y + boxPadding + triangleHeight
+				})
+
+			elseif corner == AHUD.BOX_TOP_RIGHT then
+				//We have to write clockwise, so start at the highest point furthest to the left
+				table.insert(triangleVerts, {
+					x=x + width - triangleHeight,
+					y=y
+				})
+
+				//Top right of the overall box
+				table.insert(triangleVerts, {
+					x=x + width,
+					y=y
+				})
+
+				//Then down
+				table.insert(triangleVerts, {
+					x = x + width,
+					y = y + triangleHeight
+				})
+
+				//Then shift everything to the right so the arrow points to the center
+				for index, tbl in ipairs(triangleVerts) do
+					triangleVerts[index] = {
+						x = tbl.x - width,
+						y = tbl.y
+					}
+				end
+
+			elseif corner == AHUD.BOX_BOTTOM_LEFT then
+				//Start on the bottom line, shifted to the right
+				table.insert(triangleVerts, {
+					x = x + triangleHeight,
+					y = y + height
+				})
+
+				//Move to the left
+				table.insert(triangleVerts, {
+					x = x,
+					y = y + height
+				})
+
+				//Then up
+				table.insert(triangleVerts, {
+					x = x,
+					y = y + triangleHeight
+				})
+
+				//Then shift everything up so the arrow points to the center
+				for index, tbl in ipairs(triangleVerts) do
+					PrintTable(triangleVerts[index])
+					triangleVerts[index] = {
+						x = tbl.x,
+						y = tbl.y - height
+					}
+				end
+			elseif corner == AHUD.BOX_BOTTOM_RIGHT then
+				//Start halfway down the right side
+				table.insert(triangleVerts, {
+					x = x + width,
+					y = y + triangleHeight
+				})
+
+				//Then the bottom right
+				table.insert(triangleVerts, {
+					x = x + width,
+					y = y + height
+				})
+
+				//Then the bottom line minus the triangle height
+				table.insert(triangleVerts, {
+					x = x + triangleHeight,
+					y = y + height
+				})
+
+				//Then shift everything up and to the left so the arrow points to the center
+				for index, tbl in ipairs(triangleVerts) do
+					triangleVerts[index] = {
+						x = tbl.x - width,
+					 	y = tbl.y - height
+					}
+				end
+			end
+
+			surface.DrawPoly(triangleVerts)
+			surface.DrawPoly(squareVerts)
+		end
+
 		function AHUD:DrawHealthArea()
 			local healthBoxSize = AHUD.ScrW * 0.05
 			local healthBoxStartX, healthBoxStartY = AHUD.ScrW * AHUD.Padding, (AHUD.ScrH * (1 - AHUD.Padding)) - healthBoxSize
@@ -157,6 +310,8 @@ if CLIENT then
 
 			surface.SetDrawColor(AHUD.ColBlack)
 			surface.DrawRect(healthBoxStartX, healthBoxStartY, healthBoxSize, healthBoxSize)
+
+			AHUD:DrawTriangleBox(AHUD.ScrW/2, AHUD.ScrH/2, 200, 100, AHUD.BOX_TOP_LEFT)
 
 			AHUD.playerAlive = (LocalPlayer():Team() ~= TEAM_SPECTATOR and LocalPlayer():Alive())
 
@@ -220,6 +375,43 @@ if CLIENT then
 			end
 		end
 
+		--Upon weapon switch
+		function WSWITCH:Draw(client)
+			if not self.Show then return end
+
+			local weps = self.WeaponCache
+
+			local x = AHUD.ScrW * (1 - AHUD.Padding)
+			local y = AHUD.ScrH * (1 - AHUD.Padding)
+
+			local sel = false
+
+			for k, v in pairs(weps) do
+
+				local wep = weps[#weps-(k-1)]
+
+				if self.Selected == (#weps-(k-1)) then
+					sel = true
+				end
+
+				draw.RoundedBox( 10, x - 184, y - 20, 20, 20, AHUD.ColBlack )
+				if sel then
+					draw.RoundedBox( 8, x - 182, y - 18, 16, 16, AHUD.ColRoles[ROLE] or AHUD.ColTextWhite )
+				end
+
+				surface.SetDrawColor( AHUD.ColBlack )
+				surface.DrawRect( x - 160, y - 20, 160, 20 )
+
+				draw.SimpleText( wep.Slot+1, "PD2_12", x - 175, y - 11, sel and AHUD.ColTextBlack or AHUD.ColTextFade, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+				draw.SimpleText( wep.Slot+1, "PD2_12", x - 174, y - 11, sel and AHUD.ColTextBlack or AHUD.ColTextFade, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
+				draw.SimpleText( string.upper(LANG.TryTranslation(wep:GetPrintName() or wep.PrintName or "...")), "PD2_16", x - 158, y - 11, sel and AHUD.ColTextWhite or AHUD.ColTextFade, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
+
+				sel = false
+
+				y = y - 24
+			end
+		end
+
 		-- Main section of the HUD with the health, status, armour, credits, ammo, etc
 		function AHUD:CreateMainSection()
 			AHUD:DrawHealthArea()
@@ -229,6 +421,7 @@ if CLIENT then
 		-- Stolen from CGNicks Payday 2 HUD, he's said it's freeware now but got to give credit to the OG
 		function GAMEMODE:HUDPaint()
 			local client = LocalPlayer()
+			ROLE = LocalPlayer():GetRole()
 
 			hook.Call( "HUDDrawTargetID", GAMEMODE )
 
