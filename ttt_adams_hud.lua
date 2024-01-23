@@ -14,6 +14,10 @@
 
 ]]--
 
+--Faded black bg
+--Had to make a whole vtf for this just cause I couldn't get opacity working lol
+resource.AddFile("materials/AHUD_MATFADE.vmt")
+
 if CLIENT then
 	timer.Simple( 0, function()
 		-- Here we go...
@@ -28,6 +32,9 @@ if CLIENT then
 		AHUD.ScrW = ScrW()
 		AHUD.ScrH = ScrH()
 		AHUD.MatWhite = Material("vgui/white")
+
+		AHUD.MatFade = Material("AHUD_MATFADE")
+
 		AHUD.Padding = 0.025
 		AHUD.Margin = 0.0125
 		AHUD.LastDisplayedHealth = -1
@@ -37,10 +44,9 @@ if CLIENT then
 		surface.CreateFont( "PD2_20", { font = "Tenby Five", antialias = true, size = 32.5 } )
 		surface.CreateFont( "PD2_24", { font = "Tenby Five", antialias = true, size = 39 } )
 
-		--How long should the health drain animation last?
-		--I keep this at 1
-		AHUD.HealthAnimFadeInterval = 0.25
-		AHUD.HealthAnimTickLength = 0.15
+		--How long should the health drain animation last
+		AHUD.HealthAnimFadeInterval = 0.35
+		AHUD.HealthAnimTickLength = 0.05
 		AHUD.HealthAnimTickInterval = -1
 		AHUD.HealthAnimTickCount = -1
 		AHUD.HealthAnimTickNumber = -1
@@ -308,8 +314,9 @@ if CLIENT then
 			local healthBoxMidX = healthBoxStartX + healthBoxSize/2
 			local healthBoxMidY = healthBoxStartY + healthBoxSize/2
 
-			surface.SetDrawColor(AHUD.ColBlack)
-			surface.DrawRect(healthBoxStartX, healthBoxStartY, healthBoxSize, healthBoxSize)
+			surface.SetDrawColor(color_white)
+			surface.SetMaterial(AHUD.MatFade)
+			surface.DrawTexturedRect(healthBoxStartX, healthBoxStartY, healthBoxSize, healthBoxSize)
 
 			AHUD:DrawTriangleBox(AHUD.ScrW/2, AHUD.ScrH/2, 200, 100, AHUD.BOX_TOP_LEFT)
 
@@ -330,14 +337,23 @@ if CLIENT then
 				--Health stations heal slowly so an animation would probably be too slow
 				--If you have instant heals on your server I'm judging you, bad balance!
 				if (AHUD.LastDisplayedHealth ~= playerHealth and AHUD.LastDisplayedHealth > playerHealth) then
+
 					-- Set up values for the amount of health lost
 					AHUD.HealthAnimTickCount = 0
-					AHUD.HealthAnimTickNumber = AHUD.LastDisplayedHealth - playerHealth
-					-- This will trigger the block below
-					AHUD.HealthAnimValue = AHUD.LastDisplayedHealth
 
-					--First interval is just a colour fade, then the interval is set to deplete
-					AHUD.HealthAnimNextTick = CurTime() + AHUD.HealthAnimFadeInterval
+					--If the current animation hasn't ended, do not trigger a new animation
+					--Instead, animate down to the new value
+					if (AHUD.HealthAnimValue ~= -1) then
+						print("Health anim value", AHUD.HealthAnimValue)
+						AHUD.HealthAnimTickNumber = AHUD.HealthAnimValue - playerHealth
+						print("New number", AHUD.HealthAnimTickNumber)
+					else
+						AHUD.HealthAnimTickNumber = AHUD.LastDisplayedHealth - playerHealth
+						-- This will trigger the block below
+						AHUD.HealthAnimValue = AHUD.LastDisplayedHealth
+						--First interval is just a colour fade, then the interval is set to deplete
+						AHUD.HealthAnimNextTick = CurTime() + AHUD.HealthAnimFadeInterval
+					end
 				end
 
 				if (AHUD.HealthAnimValue ~= playerHealth and AHUD.HealthAnimValue ~= -1) then
