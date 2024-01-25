@@ -1,18 +1,20 @@
 if CLIENT then
+
+  function HealthAsDegrees(val)
+    local pct = val/100
+    local toReturn = math.floor(360 * pct)
+    return toReturn
+  end
+
   function AHUD:DrawHealthArea()
-    local healthBoxSize = AHUD.ScrW * 0.05
+    local healthBoxSize = AHUD.ScrW * 0.075
     local healthBoxStartX, healthBoxStartY = AHUD.ScrW * AHUD.Padding, (AHUD.ScrH * (1 - AHUD.Padding)) - healthBoxSize
-    local healthWheelSize = healthBoxSize/2 - (healthBoxSize * 0.05)
-    local healthWheelX = healthBoxStartX + healthBoxSize/2
-    local healthWheelY = healthBoxStartY + healthBoxSize/2
 
-    local healthBoxMidX = healthBoxStartX + healthBoxSize/2
-    local healthBoxMidY = healthBoxStartY + healthBoxSize/2
-
-    AHUD:DrawTexturedRect(healthBoxStartX, healthBoxStartY, healthBoxSize, healthBoxSize)
-    AHUD:DrawTexturedRect(healthBoxStartX, healthBoxStartY, healthBoxSize, healthBoxSize)
-
-    AHUD:DrawTriangleBox(AHUD.ScrW/2, AHUD.ScrH/2, 200, 100, AHUD.BOX_TOP_LEFT)
+    local healthBoxContentBounds = AHUD:DrawOutlinedTexturedRect(healthBoxStartX, healthBoxStartY, healthBoxSize, healthBoxSize, 1)
+    local healthBoxContentSize = (healthBoxContentBounds[2].x - healthBoxContentBounds[1].x)
+    local healthWheelSize = healthBoxContentSize/2 - (healthBoxContentSize * 0.05)
+    local healthBoxMidX = healthBoxContentBounds[1].x + healthBoxContentSize/2
+    local healthBoxMidY = healthBoxContentBounds[1].y + healthBoxContentSize/2
 
     AHUD.playerAlive = (LocalPlayer():Team() ~= TEAM_SPECTATOR and LocalPlayer():Alive())
 
@@ -22,8 +24,7 @@ if CLIENT then
       --Create shake animation upon hit
       draw.SimpleText(playerHealth, "PD2_24", healthBoxMidX, healthBoxMidY, AHUD.ColTextWhite, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER)
 
-      local playerHealthAsDegrees = 360 * (playerHealth/100)
-      draw.Arc(healthBoxMidX, healthBoxMidY, healthWheelSize, 10, 0, playerHealthAsDegrees, 90, 1, AHUD.ColRoles[0])
+      draw.Arc(healthBoxMidX, healthBoxMidY, healthWheelSize, 10, 0, HealthAsDegrees(playerHealth), 90, 1, color_white)
 
       --This is the grey animated part
       --If someone is healing, don't do this - either they got it from a mod/health station
@@ -38,9 +39,7 @@ if CLIENT then
         --If the current animation hasn't ended, do not trigger a new animation
         --Instead, animate down to the new value
         if (AHUD.HealthAnimValue ~= -1) then
-          print("Health anim value", AHUD.HealthAnimValue)
           AHUD.HealthAnimTickNumber = AHUD.HealthAnimValue - playerHealth
-          print("New number", AHUD.HealthAnimTickNumber)
         else
           AHUD.HealthAnimTickNumber = AHUD.LastDisplayedHealth - playerHealth
           -- This will trigger the block below
@@ -60,7 +59,7 @@ if CLIENT then
           damageArcColor = Color( 255, 255 - 150*(factor), 255 - 150*(factor), 50 + 200*(factor))
         end
 
-        draw.Arc(healthBoxMidX, healthBoxMidY, healthWheelSize, 10, math.floor(360*(AHUD.HealthAnimValue/100)), playerHealthAsDegrees, 90,1, damageArcColor)
+        draw.Arc(healthBoxMidX, healthBoxMidY, healthWheelSize, 10, HealthAsDegrees(LocalPlayer():Health()), HealthAsDegrees(AHUD.HealthAnimValue), 90,1, damageArcColor)
 
         if (CurTime() > AHUD.HealthAnimNextTick) then
           AHUD.HealthAnimTickCount = AHUD.HealthAnimTickCount + 1
@@ -79,7 +78,7 @@ if CLIENT then
 
       AHUD.LastDisplayedHealth = playerHealth
     else
-      draw.Arc(healthBoxMidX, healthBoxMidY, healthWheelSize, 10, 0, 100, 90,1, AHUD.ColTextWhite)
+      draw.Arc(healthBoxMidX, healthBoxMidY, healthWheelSize, 10, 0, 360, 90,1, AHUD.ColTextWhite)
       surface.SetMaterial( AHUD.MatWhite )
       surface.SetDrawColor( Color( 255, 255, 255, 100 ) )
     end

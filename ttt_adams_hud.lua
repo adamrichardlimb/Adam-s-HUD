@@ -82,26 +82,8 @@ if CLIENT then
 			[ROUND_POST]   = "round_post"
 		}
 
-		function AHUD:DrawScrolling(verts)
-			surface.SetDrawColor(color_white)
-			surface.SetMaterial(AHUD.MatFade)
-			surface.DrawPoly(verts)
-			surface.SetMaterial(AHUD.MatScan)
-			surface.DrawPoly(verts)
-			draw.NoTexture()
-		end
-
-		function AHUD:DrawTexturedRect(x, y, width, height)
-			AHUD:DrawScrolling(
-				{
-					{x=x, y=y},
-					{x=x+width, y=y},
-					{x=x+width, y=y+height},
-					{x=x,y=y+height}
-				}
-			)
-		end
 		include("autorun/draw/arc.lua")
+		include("autorun/draw/textured_rect.lua")
 		include("autorun/draw/triangle_box.lua")
 		include("autorun/components/ahud_mainsection.lua")
 		include("autorun/components/ahud_weapon_switch.lua")
@@ -134,6 +116,7 @@ if CLIENT then
 		hook.Add("HUDPaint", "ADAMS_HUD", function()
 
 			AHUD:DrawHealthArea()
+			AHUD:DrawOneLineTriangleBox(AHUD.ScrW/2, AHUD.ScrH/2, 200, 100, AHUD.BOX_TOP_LEFT)
 
 		end)
 	end)

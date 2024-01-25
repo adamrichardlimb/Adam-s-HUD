@@ -26,6 +26,7 @@ if CLIENT then
 				surface.SetDrawColor( AHUD.ColBlack )
 				surface.DrawRect( x - 160, y - 20, 160, 20 )
 
+
 				draw.SimpleText( wep.Slot+1, "PD2_12", x - 175, y - 11, sel and AHUD.ColTextBlack or AHUD.ColTextFade, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 				draw.SimpleText( wep.Slot+1, "PD2_12", x - 174, y - 11, sel and AHUD.ColTextBlack or AHUD.ColTextFade, TEXT_ALIGN_CENTER, TEXT_ALIGN_CENTER )
 				draw.SimpleText( string.upper(LANG.TryTranslation(wep:GetPrintName() or wep.PrintName or "...")), "PD2_16", x - 158, y - 11, sel and AHUD.ColTextWhite or AHUD.ColTextFade, TEXT_ALIGN_LEFT, TEXT_ALIGN_CENTER )
