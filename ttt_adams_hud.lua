@@ -85,6 +85,7 @@ if CLIENT then
 		include("autorun/draw/arc.lua")
 		include("autorun/draw/textured_rect.lua")
 		include("autorun/draw/triangle_box.lua")
+		include("autorun/draw/outlined_poly.lua")
 		include("autorun/components/ahud_mainsection.lua")
 		include("autorun/components/ahud_weapon_switch.lua")
 
@@ -116,7 +117,13 @@ if CLIENT then
 		hook.Add("HUDPaint", "ADAMS_HUD", function()
 
 			AHUD:DrawHealthArea()
-			AHUD:DrawOneLineTriangleBox(AHUD.ScrW/2, AHUD.ScrH/2, 200, 100, AHUD.BOX_TOP_LEFT)
+			--AHUD:DrawOneLineTriangleBox(AHUD.ScrW/2, AHUD.ScrH/2, 200, 100, AHUD.BOX_TOP_LEFT)
+			local tri = {
+				{x=0, y=ScrH()},
+				{x=ScrW(), y=0},
+				{x=ScrW(), y=ScrH()}
+			}
+			DrawOutlinedPoly(tri, 10)
 
 		end)
 	end)
